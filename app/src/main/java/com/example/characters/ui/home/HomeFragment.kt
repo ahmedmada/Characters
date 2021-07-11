@@ -54,7 +54,6 @@ class HomeFragment : BaseMvRxFragment() {
 
     private fun showCharacters(characters: List<CharacterResponse>) {
 
-
         if (list.size == 1) list = characters
         else for (character in characters) list +=character
 
@@ -101,7 +100,7 @@ class HomeFragment : BaseMvRxFragment() {
         }
     }
 
-    fun startTimer(){
+    private fun startTimer(){
         viewLifecycleOwner.lifecycleScope.launch {
             while (true){
                 adapter.notifyDataSetChanged()

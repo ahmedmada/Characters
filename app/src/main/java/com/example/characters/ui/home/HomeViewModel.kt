@@ -1,58 +1,52 @@
 package com.example.characters.ui.home
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import com.example.characters.ui.home.HomeViewState.*
-import com.gnova.data.repositories.CharacterRepoImpl
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.disposables.Disposable
-import io.reactivex.plugins.RxJavaPlugins.onError
-import io.reactivex.schedulers.Schedulers
-import javax.inject.Inject
+import androidx.lifecycle.viewModelScope
+import com.example.characters.utils.CharacterlistState
+import com.example.characters.utils.MvRxViewModel
+import com.example.characters.utils.Resource
+import com.squareup.inject.assisted.Assisted
+import com.squareup.inject.assisted.AssistedInject
+import com.airbnb.mvrx.*
+import com.example.characters.data.repositories.CharacterRepoImpl
+import com.example.characters.utils.Status
 
-class HomeViewModel @Inject constructor(private val movieRepoImpl: CharacterRepoImpl): ViewModel()  {
+import kotlinx.coroutines.*
 
+class HomeViewModel @AssistedInject constructor(
+    @Assisted state: CharacterlistState,
+    private val movieRepoImpl: CharacterRepoImpl
+): MvRxViewModel<CharacterlistState>(state)  {
 
-    private val _viewState = MutableLiveData<HomeViewState>()
-    val viewState: LiveData<HomeViewState>
-        get() = _viewState
+    init {
+        viewModelScope.launch {
 
-    fun onViewLoaded(page : Int) {
-        getTopRatedMovies(page)
-    }
-
-
-    private fun getTopRatedMovies(page : Int) {
-
-        _viewState.value = Loading
-        add(
-            movieRepoImpl.getAllCharacters(page)
-                ?.subscribeOn(Schedulers.io())
-                ?.observeOn(AndroidSchedulers.mainThread())
-                ?.subscribe({
-                    _viewState.value = Presenting(it)
-                }, {
-                    onError(it)
-                    _viewState.value = Error
+//            emit(Resource.loading(data = null))
+            setState {
+                copy(characters = Resource.loading(null))
+            }
+            try {
+                val v = Resource.success(data = movieRepoImpl.getCharacters(1))
+                setState {
+                    copy(characters = v)
                 }
-                )
-        )
-    }
-
-
-    val compositeDisposable: CompositeDisposable by lazy { CompositeDisposable() }
-
-    protected fun add(disposable: Disposable?) {
-        if (disposable != null) {
-            compositeDisposable.add(disposable)
+            } catch (exception: Exception) {
+                setState {
+                    copy(characters = Resource(Status.ERROR,null,exception.message))
+                }
+            }
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        compositeDisposable.clear()
+    @AssistedInject.Factory
+    interface Factory {
+        fun create(state: CharacterlistState): HomeViewModel
+    }
+
+    companion object : MvRxViewModelFactory<HomeViewModel, CharacterlistState> {
+        override fun create(viewModelContext: ViewModelContext, state: CharacterlistState): HomeViewModel? {
+            val fragment = (viewModelContext as FragmentViewModelContext).fragment<HomeFragment>()
+            return fragment.viewModelFactory.create(state)
+        }
     }
 
 }

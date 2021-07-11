@@ -7,8 +7,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.characters.R
+import com.example.characters.data.api.response.CharacterResponse
 import com.example.characters.databinding.CharacterGridViewItemBinding
-import com.gnova.data.api.response.CharacterResponse
 import com.squareup.picasso.Picasso
 import java.text.SimpleDateFormat
 import java.util.*
@@ -41,7 +41,7 @@ class CharacterAdapter : ListAdapter<CharacterResponse, CharacterAdapter.MovieVi
                 calendar.timeInMillis = System.currentTimeMillis() - timeInMillis
 
 
-                var dif = System.currentTimeMillis() - timeInMillis
+                var dif = (System.currentTimeMillis() - timeInMillis)
 
                 val days = dif / (1000 * 60 * 60 * 24) % 365
 
@@ -55,8 +55,6 @@ class CharacterAdapter : ListAdapter<CharacterResponse, CharacterAdapter.MovieVi
                 val minutes_difference = dif / (1000 * 60) % 60
 
                 val hours_difference = dif / (1000 * 60 * 60) % 24
-
-
                 binding.age.text = "age \n"+
                         "Years = "+years_difference+"\n"+
                         "Months = "+month_difference+"\n"+

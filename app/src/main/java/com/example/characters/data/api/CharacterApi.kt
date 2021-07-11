@@ -1,16 +1,15 @@
-package com.gnova.data.api
+package com.example.characters.data.api
 
-import com.gnova.data.api.response.CharacterResponse
-import io.reactivex.Observable
+import com.example.characters.data.api.response.CharacterResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface CharacterApi {
 
     @GET("api/characters")
-    fun getTopRatedMovies(
+    suspend fun getCharacters(
         @Query("limit") limit: Int,
         @Query("offset") page: Int
-    ): Observable<List<CharacterResponse>>
+    ): List<CharacterResponse>
 
 }

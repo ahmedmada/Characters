@@ -1,20 +1,17 @@
 package com.example.characters
 
-import android.app.Application
-import com.example.characters.di.AppComponent
-import com.example.characters.di.DaggerAppComponent
+import com.example.characters.dp.DaggerApplicationComponent
+import dagger.android.AndroidInjector
+import dagger.android.DaggerApplication
 
-open class App : Application() {
+class App : DaggerApplication() {
 
-    // Instance of the AppComponent that will be used by all the Activities in the project
-    val appComponent: AppComponent by lazy {
-        initializeComponent()
-    }
-
-    open fun initializeComponent(): AppComponent {
-        // Creates an instance of AppComponent using its Factory constructor
-        // We pass the applicationContext that will be used as Context in the graph
-        return DaggerAppComponent.factory().create(applicationContext)
-    }
-
+    override fun applicationInjector(): AndroidInjector<out DaggerApplication> =
+        DaggerApplicationComponent
+            .builder()
+            .applicationContext(this)
+            .build()
+            .also {
+                it.inject(this)
+            }
 }

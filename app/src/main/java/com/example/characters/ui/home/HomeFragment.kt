@@ -1,89 +1,55 @@
 package com.example.characters.ui.home
 
+import android.content.Context
 import android.os.Bundle
-import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
+import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.example.characters.App
+import com.airbnb.mvrx.*
 import com.example.characters.R
 import com.example.characters.databinding.FragmentHomeBinding
-import com.example.characters.ui.home.HomeViewState.*
-import com.example.characters.utils.ViewModelFactory
-import com.gnova.data.api.response.CharacterResponse
 import javax.inject.Inject
+import kotlinx.coroutines.*
+import com.example.characters.data.api.response.CharacterResponse
+import com.example.characters.utils.Status
+import dagger.android.support.AndroidSupportInjection
 
-class HomeFragment : Fragment(R.layout.fragment_home) {
-
+class HomeFragment : BaseMvRxFragment() {
 
     @Inject
-    internal lateinit var viewModelFactory: ViewModelFactory<HomeViewModel>
-    private lateinit var viewModel: HomeViewModel
+    lateinit var viewModelFactory: HomeViewModel.Factory
 
-    var visibleItemCount = 0
-    var totalItemCount = 0
-    var pastVisibleItems = 0
+    private val viewModel: HomeViewModel by fragmentViewModel()
 
-    var page = 1
     var isLoading = false
 
     private val adapter: CharacterAdapter by lazy {
         CharacterAdapter()
     }
 
+    override fun onAttach(context: Context) {
+        AndroidSupportInjection.inject(this)
+        super.onAttach(context)
+    }
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) =
+        inflater.inflate(R.layout.fragment_home, container, false)
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (requireActivity().application as App).appComponent.inject(this)
-        val binding = FragmentHomeBinding.bind(view)
-        _binding = binding
 
-
-        viewModel = ViewModelProvider(this, viewModelFactory).get(HomeViewModel::class.java)
+        _binding = FragmentHomeBinding.bind(view)
 
         setupRecyclerView()
 
-        viewModel.onViewLoaded(page)
-
-        observeviewState()
-
     }
 
-    private fun observeviewState() {
-        viewModel.viewState.observe(viewLifecycleOwner, Observer {
-            when (it) {
-                is Loading -> {
-                    Log.d("TAG", "LOADING")
-                    binding.statusImage.visibility = View.VISIBLE
-                    isLoading = true
-//                    binding.statusImage.setImageResource(R.drawable.loading_animation)
-                }
-                is Error -> {
-                    Log.d("TAG", "ERROR HOME FRAGMENT")
-                    binding.statusImage.visibility = View.VISIBLE
-                    binding.statusImage.setImageResource(R.drawable.ic_connection_error)
-                    isLoading = false
-                    binding.progressBar.visibility = View.GONE
-                }
-                is Presenting -> {
-                    binding.statusImage.visibility = View.GONE
-                    showCharacters(it.results)
-                    isLoading = false
-                    binding.progressBar.visibility = View.GONE
-
-                }
-
-            }
-        })
-    }
-
-    var list: List<CharacterResponse> = listOf(CharacterResponse(0, "","","",""))
+    var list: List<CharacterResponse> = listOf(CharacterResponse(0, "", "", "", ""))
 
 
     private fun showCharacters(characters: List<CharacterResponse>) {
@@ -104,29 +70,44 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         binding.charactersRecyclerView.layoutManager = GridLayoutManager(this.context, 2)
         binding.charactersRecyclerView.adapter = adapter
 
+    }
 
+    override fun invalidate() {
 
-        binding.charactersRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+        withState(viewModel) { state ->
 
-                super.onScrollStateChanged(recyclerView, newState)
+            when (state.characters.status) {
+                Status.SUCCESS -> {
+                    binding.statusImage.visibility = View.GONE
 
+                    state.characters.data?.let { showCharacters(it) }
 
-                visibleItemCount = (binding.charactersRecyclerView.getLayoutManager() as GridLayoutManager)
-                    .getChildCount()
-                totalItemCount = (binding.charactersRecyclerView.getLayoutManager() as GridLayoutManager)
-                    .getItemCount()
-                pastVisibleItems = (binding.charactersRecyclerView.getLayoutManager() as GridLayoutManager)
-                    .findFirstCompletelyVisibleItemPosition()
+                    isLoading = false
+                    binding.progressBar.visibility = View.GONE
 
-                if (pastVisibleItems + visibleItemCount >= totalItemCount && !isLoading) {
-                    binding.progressBar.visibility = View.VISIBLE
-                    page+=10
-                    viewModel.onViewLoaded(page)
+                    startTimer()
 
                 }
+                Status.ERROR -> {
+                    isLoading = false
+                    binding.progressBar.visibility = View.GONE
+                }
+                Status.LOADING -> {
+                    isLoading = true
+                    binding.progressBar.visibility = View.VISIBLE
+                }
             }
-        })
+
+        }
+    }
+
+    fun startTimer(){
+        viewLifecycleOwner.lifecycleScope.launch {
+            while (true){
+                adapter.notifyDataSetChanged()
+                delay(1000)
+            }
+        }
 
     }
 

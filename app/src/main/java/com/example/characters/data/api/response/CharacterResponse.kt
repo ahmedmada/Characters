@@ -1,4 +1,4 @@
-package com.gnova.data.api.response
+package com.example.characters.data.api.response
 
 import com.squareup.moshi.Json
 

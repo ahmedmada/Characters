@@ -1,23 +1,14 @@
-package com.gnova.data.repositories
+package com.example.characters.data.repositories
 
-import com.gnova.data.api.CharacterApi
-import com.gnova.data.api.response.CharacterResponse
-import com.gnova.data.mappers.CharacterDTOMapper
-import com.gnova.domain.repositories.CharacterRepo
-import io.reactivex.Observable
+import com.example.characters.data.api.CharacterApi
+import com.example.characters.data.api.response.CharacterResponse
 import javax.inject.Inject
 
 class CharacterRepoImpl@Inject constructor(
     private val characterApi: CharacterApi,
-    private val characterMapper: CharacterDTOMapper,
+    ) {
 
-    ) : CharacterRepo {
-
-    override fun getAllCharacters(page: Int): Observable<List<CharacterResponse>>? {
-
-        return characterApi.getTopRatedMovies(10, page)
-            .map {
-                characterMapper.mapToDomainList(it)
-            }
+    suspend fun getCharacters(page: Int):List<CharacterResponse> ?{
+        return characterApi.getCharacters(10, page)
     }
 }
